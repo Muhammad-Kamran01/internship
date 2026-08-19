@@ -94,21 +94,43 @@ export const projectService = {
   async getProjects(studentId?: string): Promise<Project[]> {
     if (isSupabaseConfigured) {
       try {
-        let query = supabase.from('projects').select('*, files:project_files(*)').order('created_at', { ascending: false });
-        if (studentId) {
-          if (isUuid(studentId)) {
-            query = query.eq('student_id', studentId);
-          } else {
-            // Not a UUID (e.g. demo user), fallback to local storage
-            return getLocalProjects().filter((p) => p.student_id === studentId);
-          }
+        let query = supabase.from('projects').select('*').order('created_at', { ascending: false });
+        if (studentId && isUuid(studentId)) {
+          query = query.eq('student_id', studentId);
         }
-        const { data, error } = await query;
-        if (!error && data) {
-          return data as Project[];
+        const { data: projectsData, error: projError } = await query;
+        if (!projError && projectsData && projectsData.length > 0) {
+          // Fetch project files
+          const projectIds = projectsData.map((p: any) => p.id);
+          const { data: filesData } = await supabase
+            .from('project_files')
+            .select('*')
+            .in('project_id', projectIds);
+
+          const filesMap = new Map<string, ProjectFile[]>();
+          (filesData || []).forEach((f: any) => {
+            const list = filesMap.get(f.project_id) || [];
+            list.push(f);
+            filesMap.set(f.project_id, list);
+          });
+
+          // Fetch proposals counts
+          const { data: propCounts } = await supabase
+            .from('proposals')
+            .select('project_id');
+          const propCountMap = new Map<string, number>();
+          (propCounts || []).forEach((p: any) => {
+            propCountMap.set(p.project_id, (propCountMap.get(p.project_id) || 0) + 1);
+          });
+
+          return projectsData.map((p: any) => ({
+            ...p,
+            files: filesMap.get(p.id) || [],
+            proposals_count: propCountMap.get(p.id) || p.proposals_count || 0,
+          })) as Project[];
         }
-        if (error) {
-          console.warn('Supabase fetch projects error:', error.message);
+        if (projError) {
+          console.warn('Supabase fetch projects error:', projError.message);
         }
       } catch (err) {
         console.warn('Supabase fetch projects error, using local state:', err);
@@ -130,12 +152,26 @@ export const projectService = {
       try {
         const { data, error } = await supabase
           .from('projects')
-          .select('*, files:project_files(*)')
+          .select('*')
           .eq('id', projectId)
           .single();
 
         if (!error && data) {
-          return data as Project;
+          const { data: filesData } = await supabase
+            .from('project_files')
+            .select('*')
+            .eq('project_id', projectId);
+
+          const { count } = await supabase
+            .from('proposals')
+            .select('*', { count: 'exact', head: true })
+            .eq('project_id', projectId);
+
+          return {
+            ...data,
+            files: filesData || [],
+            proposals_count: count || data.proposals_count || 0,
+          } as Project;
         }
         if (error) {
           console.warn('Supabase get project by id error:', error.message);

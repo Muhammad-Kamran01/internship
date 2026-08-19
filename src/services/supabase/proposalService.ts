@@ -81,38 +81,91 @@ export const proposalService = {
    * Get all proposals submitted by a freelancer
    */
   async getProposalsForFreelancer(freelancerId: string): Promise<Proposal[]> {
-    if (isSupabaseConfigured && isUuid(freelancerId)) {
-      try {
-        const { data, error } = await supabase
-          .from('proposals')
-          .select('*, project:projects(*)')
-          .eq('freelancer_id', freelancerId)
-          .order('created_at', { ascending: false });
+    let supabaseProposals: Proposal[] = [];
 
-        if (!error && data) {
-          return data.map((item: any) => ({
-            ...item,
-            project_title: item.project?.title,
-            project_category: item.project?.category,
-            project_budget: item.project?.budget,
-            project_deadline: item.project?.deadline,
-          })) as Proposal[];
+    if (isSupabaseConfigured) {
+      try {
+        let query = supabase.from('proposals').select('*').order('created_at', { ascending: false });
+        if (freelancerId && isUuid(freelancerId)) {
+          query = query.eq('freelancer_id', freelancerId);
+        }
+        const { data: propData, error: propError } = await query;
+
+        if (!propError && propData && propData.length > 0) {
+          // Fetch associated projects to populate project titles, categories, and budgets
+          const projectIds = Array.from(new Set(propData.map((p: any) => p.project_id).filter(Boolean)));
+          let projectMap = new Map<string, any>();
+
+          if (projectIds.length > 0) {
+            const { data: projectsData } = await supabase
+              .from('projects')
+              .select('id, title, category, budget, deadline')
+              .in('id', projectIds);
+
+            if (projectsData) {
+              projectMap = new Map(projectsData.map((p: any) => [p.id, p]));
+            }
+          }
+
+          supabaseProposals = propData.map((item: any) => {
+            const proj = projectMap.get(item.project_id);
+            return {
+              id: item.id,
+              project_id: item.project_id,
+              project_title: proj?.title || item.project_title || 'Academic Task',
+              project_category: proj?.category || item.project_category || 'General',
+              project_budget: proj?.budget || item.project_budget || 0,
+              project_deadline: proj?.deadline || item.project_deadline || '',
+              freelancer_id: item.freelancer_id,
+              freelancer_name: item.freelancer_name || 'Assistant Specialist',
+              freelancer_photo: item.freelancer_photo,
+              cover_letter: item.cover_letter || '',
+              proposed_price: Number(item.proposed_price || 0),
+              estimated_days: Number(item.estimated_days || 1),
+              status: item.status || 'Pending',
+              attachment_url: item.attachment_url,
+              attachment_name: item.attachment_name,
+              created_at: item.created_at || new Date().toISOString(),
+              updated_at: item.updated_at,
+            } as Proposal;
+          });
         }
       } catch (e) {
         console.warn('Fetch proposals error:', e);
       }
     }
 
-    const proposals = getLocalProposals();
-    return proposals.filter(
+    const localProposals = getLocalProposals().filter(
       (p) => p.freelancer_id === freelancerId || freelancerId === 'usr-freelancer-001'
     );
+
+    // Merge Supabase and local proposals without duplicate IDs
+    const seenIds = new Set<string>();
+    const merged: Proposal[] = [];
+
+    for (const p of supabaseProposals) {
+      if (!seenIds.has(p.id)) {
+        seenIds.add(p.id);
+        merged.push(p);
+      }
+    }
+
+    for (const p of localProposals) {
+      if (!seenIds.has(p.id)) {
+        seenIds.add(p.id);
+        merged.push(p);
+      }
+    }
+
+    return merged;
   },
 
   /**
    * Get all proposals submitted for a specific project (Student view)
    */
   async getProposalsForProject(projectId: string): Promise<Proposal[]> {
+    let supabaseProposals: Proposal[] = [];
+
     if (isSupabaseConfigured && isUuid(projectId)) {
       try {
         const { data, error } = await supabase
@@ -121,14 +174,33 @@ export const proposalService = {
           .eq('project_id', projectId)
           .order('created_at', { ascending: false });
 
-        if (!error && data) return data as Proposal[];
+        if (!error && data && data.length > 0) {
+          supabaseProposals = data as Proposal[];
+        }
       } catch (e) {
         console.warn('Fetch project proposals error:', e);
       }
     }
 
-    const proposals = getLocalProposals();
-    return proposals.filter((p) => p.project_id === projectId);
+    const localProposals = getLocalProposals().filter((p) => p.project_id === projectId);
+    const seenIds = new Set<string>();
+    const merged: Proposal[] = [];
+
+    for (const p of supabaseProposals) {
+      if (!seenIds.has(p.id)) {
+        seenIds.add(p.id);
+        merged.push(p);
+      }
+    }
+
+    for (const p of localProposals) {
+      if (!seenIds.has(p.id)) {
+        seenIds.add(p.id);
+        merged.push(p);
+      }
+    }
+
+    return merged;
   },
 
   /**
@@ -201,9 +273,9 @@ export const proposalService = {
       created_at: new Date().toISOString(),
     };
 
-    if (isSupabaseConfigured && isUuid(proposalData.freelancer_id) && isUuid(proposalData.project_id)) {
+    if (isSupabaseConfigured && isUuid(proposalData.project_id)) {
       try {
-        await supabase.from('proposals').insert([
+        const { error: insertError } = await supabase.from('proposals').insert([
           {
             id: newProposal.id,
             project_id: newProposal.project_id,
@@ -216,6 +288,9 @@ export const proposalService = {
             attachment_name: newProposal.attachment_name,
           },
         ]);
+        if (insertError) {
+          console.error('Supabase proposal insert error:', insertError.message);
+        }
       } catch (err) {
         console.warn('Supabase proposal insert error:', err);
       }
@@ -327,19 +402,79 @@ export const proposalService = {
   },
 
   /**
+   * Get all deliveries submitted by a freelancer
+   */
+  async getDeliveriesForFreelancer(freelancerId: string): Promise<Delivery[]> {
+    let supabaseDeliveries: Delivery[] = [];
+
+    if (isSupabaseConfigured) {
+      try {
+        let query = supabase.from('deliveries').select('*').order('created_at', { ascending: false });
+        if (freelancerId && isUuid(freelancerId)) {
+          query = query.eq('freelancer_id', freelancerId);
+        }
+        const { data, error } = await query;
+        if (!error && data && data.length > 0) {
+          supabaseDeliveries = data as Delivery[];
+        }
+      } catch (e) {
+        console.warn('Fetch freelancer deliveries error:', e);
+      }
+    }
+
+    const localDeliveries = getLocalDeliveries().filter(
+      (d) => d.freelancer_id === freelancerId || freelancerId === 'usr-freelancer-001'
+    );
+
+    const seenIds = new Set<string>();
+    const merged: Delivery[] = [];
+    for (const d of supabaseDeliveries) {
+      if (!seenIds.has(d.id)) {
+        seenIds.add(d.id);
+        merged.push(d);
+      }
+    }
+    for (const d of localDeliveries) {
+      if (!seenIds.has(d.id)) {
+        seenIds.add(d.id);
+        merged.push(d);
+      }
+    }
+    return merged;
+  },
+
+  /**
    * Get Active Projects for Freelancer/Assistant
    */
   async getActiveProjectsForFreelancer(freelancerId: string): Promise<Project[]> {
     const allProjects = await projectService.getProjects();
     const freelancerProposals = await this.getProposalsForFreelancer(freelancerId);
-    const acceptedProjectIds = new Set(
-      freelancerProposals.filter((p) => p.status === 'Accepted').map((p) => p.project_id)
+    const freelancerDeliveries = await this.getDeliveriesForFreelancer(freelancerId);
+
+    const activeProjectIds = new Set<string>();
+
+    freelancerProposals.forEach((p) => {
+      if (p.status === 'Accepted') {
+        activeProjectIds.add(p.project_id);
+      }
+    });
+
+    freelancerDeliveries.forEach((d) => {
+      if (d.project_id) activeProjectIds.add(d.project_id);
+    });
+
+    const active = allProjects.filter(
+      (p) =>
+        activeProjectIds.has(p.id) ||
+        (p.assigned_agent && (p.assigned_agent.toLowerCase().includes('specialist') || p.assigned_agent.toLowerCase().includes('assistant')))
     );
 
+    if (active.length > 0) return active;
+
+    // Fallback demo active projects
     return allProjects.filter(
       (p) =>
-        acceptedProjectIds.has(p.id) ||
-        p.id === 'proj-001' || // Keep default demo active project
+        p.id === 'proj-001' ||
         p.id === 'proj-002' ||
         p.id === 'proj-003'
     );
@@ -425,6 +560,8 @@ export const proposalService = {
    * Get Deliveries for a project
    */
   async getDeliveriesForProject(projectId: string): Promise<Delivery[]> {
+    let supabaseDeliveries: Delivery[] = [];
+
     if (isSupabaseConfigured && isUuid(projectId)) {
       try {
         const { data, error } = await supabase
@@ -433,14 +570,41 @@ export const proposalService = {
           .eq('project_id', projectId)
           .order('created_at', { ascending: false });
 
-        if (!error && data) return data as Delivery[];
+        if (!error && data && data.length > 0) {
+          const { data: filesData } = await supabase
+            .from('project_files')
+            .select('*')
+            .eq('project_id', projectId);
+
+          supabaseDeliveries = data.map((d: any) => ({
+            ...d,
+            files: filesData || [],
+          })) as Delivery[];
+        }
       } catch (e) {
         console.warn('Fetch deliveries error:', e);
       }
     }
 
-    const deliveries = getLocalDeliveries();
-    return deliveries.filter((d) => d.project_id === projectId);
+    const localDeliveries = getLocalDeliveries().filter((d) => d.project_id === projectId);
+    const seenIds = new Set<string>();
+    const merged: Delivery[] = [];
+
+    for (const d of supabaseDeliveries) {
+      if (!seenIds.has(d.id)) {
+        seenIds.add(d.id);
+        merged.push(d);
+      }
+    }
+
+    for (const d of localDeliveries) {
+      if (!seenIds.has(d.id)) {
+        seenIds.add(d.id);
+        merged.push(d);
+      }
+    }
+
+    return merged;
   },
 
   /**
@@ -578,26 +742,83 @@ export const proposalService = {
     availableBalance: number;
     records: EarningRecord[];
   }> {
-    const records = getLocalEarnings().filter(
-      (e) => e.freelancer_id === freelancerId || freelancerId === 'usr-freelancer-001'
+    let supabaseEarnings: EarningRecord[] = [];
+
+    if (isSupabaseConfigured) {
+      try {
+        let query = supabase.from('earnings').select('*').order('completed_at', { ascending: false });
+        if (freelancerId && freelancerId !== 'all' && isUuid(freelancerId)) {
+          query = query.eq('freelancer_id', freelancerId);
+        }
+        const { data, error } = await query;
+
+        if (!error && data && data.length > 0) {
+          const projectIds = Array.from(new Set(data.map((e: any) => e.project_id).filter(Boolean)));
+          let projectMap = new Map<string, string>();
+
+          if (projectIds.length > 0) {
+            const { data: projectsData } = await supabase
+              .from('projects')
+              .select('id, title')
+              .in('id', projectIds);
+
+            if (projectsData) {
+              projectMap = new Map(projectsData.map((p: any) => [p.id, p.title]));
+            }
+          }
+
+          supabaseEarnings = data.map((e: any) => ({
+            id: e.id,
+            project_id: e.project_id,
+            project_title: e.project_title || projectMap.get(e.project_id) || 'Academic Task Delivery',
+            freelancer_id: e.freelancer_id,
+            amount: Number(e.amount || 0),
+            status: e.status || 'Available',
+            completed_at: e.completed_at || new Date().toISOString(),
+          }));
+        }
+      } catch (err) {
+        console.warn('Supabase fetch earnings error:', err);
+      }
+    }
+
+    const localEarnings = getLocalEarnings().filter(
+      (e) => freelancerId === 'all' || e.freelancer_id === freelancerId || freelancerId === 'usr-freelancer-001'
     );
 
-    const available = records
-      .filter((r) => r.status === 'Available')
-      .reduce((sum, r) => sum + r.amount, 0);
+    const seenIds = new Set<string>();
+    const mergedRecords: EarningRecord[] = [];
 
-    const pending = records
+    for (const rec of supabaseEarnings) {
+      if (!seenIds.has(rec.id)) {
+        seenIds.add(rec.id);
+        mergedRecords.push(rec);
+      }
+    }
+
+    for (const rec of localEarnings) {
+      if (!seenIds.has(rec.id)) {
+        seenIds.add(rec.id);
+        mergedRecords.push(rec);
+      }
+    }
+
+    const available = mergedRecords
+      .filter((r) => r.status === 'Available')
+      .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+    const pending = mergedRecords
       .filter((r) => r.status === 'Pending')
-      .reduce((sum, r) => sum + r.amount, 0);
+      .reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
     const total = available + pending;
 
     return {
-      totalEarnings: total,
-      completedEarnings: available,
-      pendingEarnings: pending,
-      availableBalance: available,
-      records,
+      totalEarnings: Math.max(0, total),
+      completedEarnings: Math.max(0, available),
+      pendingEarnings: Math.max(0, pending),
+      availableBalance: Math.max(0, available),
+      records: mergedRecords,
     };
   },
 
@@ -690,6 +911,14 @@ export const proposalService = {
       status: 'Available',
       completed_at: new Date().toISOString(),
     };
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('earnings').insert([payoutRecord]);
+      } catch (e) {
+        console.warn('Supabase payout insert error:', e);
+      }
+    }
 
     earnings.unshift(payoutRecord);
     saveLocalEarnings(earnings);

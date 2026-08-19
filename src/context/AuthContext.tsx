@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Profile, UserRole } from '../types';
 import { authService } from '../services/supabase/authService';
-import { isSupabaseConfigured } from '../services/supabase/client';
+import { supabase, isSupabaseConfigured } from '../services/supabase/client';
 
 interface AuthContextType {
   user: Profile | null;
@@ -32,17 +32,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadUser() {
       try {
         const { user: current } = await authService.getCurrentSession();
-        setUser(current);
+        if (mounted) {
+          setUser(current);
+        }
       } catch (err) {
         console.warn('Error loading initial auth session:', err);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
     loadUser();
+
+    if (isSupabaseConfigured) {
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (!mounted) return;
+        if (session?.user) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+
+            if (profile && mounted) {
+              setUser(profile as Profile);
+              localStorage.setItem('student_assistant_user_session', JSON.stringify(profile));
+              return;
+            }
+          } catch (e) {
+            console.warn('Error fetching Supabase profile in auth listener:', e);
+          }
+
+          if (mounted) {
+            const fallbackProfile: Profile = {
+              id: session.user.id,
+              full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+              email: session.user.email || '',
+              role: (session.user.user_metadata?.role as UserRole) || 'student',
+              phone: session.user.user_metadata?.phone || '',
+              institution: session.user.user_metadata?.institution || '',
+              academic_degree: session.user.user_metadata?.academic_degree || '',
+              created_at: session.user.created_at,
+            };
+            setUser(fallbackProfile);
+            localStorage.setItem('student_assistant_user_session', JSON.stringify(fallbackProfile));
+          }
+        } else if (event === 'SIGNED_OUT') {
+          if (mounted) {
+            setUser(null);
+            localStorage.removeItem('student_assistant_user_session');
+          }
+        }
+      });
+
+      return () => {
+        mounted = false;
+        authListener?.subscription?.unsubscribe();
+      };
+    }
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const login = async (email: string, password: string, role?: UserRole) => {

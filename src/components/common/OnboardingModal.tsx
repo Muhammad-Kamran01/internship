@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 interface OnboardingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  role: 'student' | 'freelancer' | 'assistant';
+  role: 'student' | 'freelancer';
 }
 
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose, role }) => {
@@ -12,7 +12,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
   // Determine image path based on role
   const isStudent = role === 'student';
   const isFreelancer = role === 'freelancer';
-  const customImagePath = isStudent ? '/welcome-student.png' : isFreelancer ? '/welcome-assistant.png' : '/welcome-assistant.png';
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  const assetFileName = isStudent ? 'welcome-student.png' : isFreelancer ? 'welcome-assistant.png' : 'welcome-assistant.png';
+  const customImagePath = `${baseUrl}${assetFileName}`;
 
   useEffect(() => {
     setImageError(false);
