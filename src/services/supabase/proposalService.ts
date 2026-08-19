@@ -82,6 +82,7 @@ export const proposalService = {
    */
   async getProposalsForFreelancer(freelancerId: string): Promise<Proposal[]> {
     let supabaseProposals: Proposal[] = [];
+    const useSupabaseOnlyForUser = isSupabaseConfigured && isUuid(freelancerId);
 
     if (isSupabaseConfigured) {
       try {
@@ -135,9 +136,12 @@ export const proposalService = {
       }
     }
 
-    const localProposals = getLocalProposals().filter(
-      (p) => p.freelancer_id === freelancerId || freelancerId === 'usr-freelancer-001'
-    );
+    // For real Supabase users, avoid mixing browser-local demo data that differs per domain.
+    const localProposals = useSupabaseOnlyForUser
+      ? []
+      : getLocalProposals().filter(
+          (p) => p.freelancer_id === freelancerId || freelancerId === 'usr-freelancer-001'
+        );
 
     // Merge Supabase and local proposals without duplicate IDs
     const seenIds = new Set<string>();
@@ -743,6 +747,7 @@ export const proposalService = {
     records: EarningRecord[];
   }> {
     let supabaseEarnings: EarningRecord[] = [];
+    const useSupabaseOnlyForUser = isSupabaseConfigured && freelancerId !== 'all' && isUuid(freelancerId);
 
     if (isSupabaseConfigured) {
       try {
@@ -782,9 +787,12 @@ export const proposalService = {
       }
     }
 
-    const localEarnings = getLocalEarnings().filter(
-      (e) => freelancerId === 'all' || e.freelancer_id === freelancerId || freelancerId === 'usr-freelancer-001'
-    );
+    // For real Supabase users, avoid mixing browser-local demo data that differs per domain.
+    const localEarnings = useSupabaseOnlyForUser
+      ? []
+      : getLocalEarnings().filter(
+          (e) => freelancerId === 'all' || e.freelancer_id === freelancerId || freelancerId === 'usr-freelancer-001'
+        );
 
     const seenIds = new Set<string>();
     const mergedRecords: EarningRecord[] = [];
