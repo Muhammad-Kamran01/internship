@@ -136,49 +136,49 @@ export const FreelancerDashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div
               onClick={() => navigate('/freelancer/projects')}
-              className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs hover:border-indigo-300 transition-all cursor-pointer space-y-2"
+              className="bg-indigo-950 rounded-3xl p-5 border border-indigo-500/40 shadow-lg shadow-slate-950/10 hover:border-indigo-300 transition-all cursor-pointer space-y-2"
             >
-              <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center justify-between text-indigo-200">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Open Tasks</span>
                 <Search className="w-4 h-4 text-indigo-600" />
               </div>
-              <p className="text-2xl font-black text-slate-900">{openProjects.length}</p>
+              <p className="text-2xl font-black text-white">{openProjects.length}</p>
               <span className="text-[10px] text-indigo-600 font-bold block">Available to bid →</span>
             </div>
 
             <div
               onClick={() => navigate('/freelancer/proposals')}
-              className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs hover:border-amber-300 transition-all cursor-pointer space-y-2"
+              className="bg-amber-950 rounded-3xl p-5 border border-amber-500/40 shadow-lg shadow-slate-950/10 hover:border-amber-300 transition-all cursor-pointer space-y-2"
             >
-              <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center justify-between text-amber-200">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Submitted Proposals</span>
                 <FileText className="w-4 h-4 text-amber-500" />
               </div>
-              <p className="text-2xl font-black text-slate-900">{myProposals.length}</p>
+              <p className="text-2xl font-black text-white">{myProposals.length}</p>
               <span className="text-[10px] text-amber-600 font-bold block">View statuses →</span>
             </div>
 
             <div
               onClick={() => navigate('/freelancer/active-projects')}
-              className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition-all cursor-pointer space-y-2"
+              className="bg-emerald-950 rounded-3xl p-5 border border-emerald-500/40 shadow-lg shadow-slate-950/10 hover:border-emerald-300 transition-all cursor-pointer space-y-2"
             >
-              <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center justify-between text-emerald-200">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Active Workspaces</span>
                 <Briefcase className="w-4 h-4 text-emerald-600" />
               </div>
-              <p className="text-2xl font-black text-slate-900">{activeProjects.length}</p>
+              <p className="text-2xl font-black text-white">{activeProjects.length}</p>
               <span className="text-[10px] text-emerald-600 font-bold block">Manage work →</span>
             </div>
 
             <div
               onClick={() => navigate('/freelancer/earnings')}
-              className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs hover:border-blue-300 transition-all cursor-pointer space-y-2"
+              className="bg-blue-950 rounded-3xl p-5 border border-blue-500/40 shadow-lg shadow-slate-950/10 hover:border-blue-300 transition-all cursor-pointer space-y-2"
             >
-              <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center justify-between text-blue-200">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Available Balance</span>
                 <DollarSign className="w-4 h-4 text-blue-600" />
               </div>
-              <p className="text-2xl font-black text-slate-900">{formatCurrency(earningsBalance)}</p>
+              <p className="text-2xl font-black text-white">{formatCurrency(earningsBalance)}</p>
               <span className="text-[10px] text-blue-600 font-bold block">Withdraw payouts →</span>
             </div>
           </div>

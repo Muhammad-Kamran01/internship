@@ -106,24 +106,24 @@ export const AdminDashboardPage: React.FC = () => {
       {/* Primary 4 Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* Total Users */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+        <div className="bg-purple-950 p-5 rounded-2xl border border-purple-500/40 shadow-lg shadow-slate-950/10 flex flex-col justify-between hover:border-purple-300 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Registered Users</span>
+            <span className="text-xs font-bold text-purple-200 uppercase tracking-wider">Registered Users</span>
             <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600 border border-purple-100">
               <Users className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {loading ? '...' : stats?.totalUsers || 0}
             </p>
-            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 font-medium">
+            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-300 font-medium">
               <span className="text-blue-600 font-semibold">{stats?.totalStudents || 0} Students</span>
               <span>•</span>
               <span className="text-emerald-600 font-semibold">{stats?.totalAssistants || 0} Assistants</span>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="mt-3 pt-3 border-t border-purple-500/30 flex items-center justify-between">
             <NavLink to="/admin/users" className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1">
               <span>Manage Users</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -132,24 +132,24 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* Total Projects */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+        <div className="bg-blue-950 p-5 rounded-2xl border border-blue-500/40 shadow-lg shadow-slate-950/10 flex flex-col justify-between hover:border-blue-300 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Projects</span>
+            <span className="text-xs font-bold text-blue-200 uppercase tracking-wider">Total Projects</span>
             <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
               <FolderKanban className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {loading ? '...' : stats?.totalProjects || 0}
             </p>
-            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 font-medium">
+            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-300 font-medium">
               <span className="text-emerald-600 font-semibold">{stats?.completedProjects || 0} Done</span>
               <span>•</span>
               <span className="text-blue-600 font-semibold">{stats?.activeProjects || 0} In Progress</span>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="mt-3 pt-3 border-t border-blue-500/30 flex items-center justify-between">
             <NavLink to="/admin/projects" className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
               <span>View All Projects</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -158,22 +158,22 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* Deliveries & Quality */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+        <div className="bg-amber-950 p-5 rounded-2xl border border-amber-500/40 shadow-lg shadow-slate-950/10 flex flex-col justify-between hover:border-amber-300 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Deliveries Under Review</span>
+            <span className="text-xs font-bold text-amber-200 uppercase tracking-wider">Deliveries Under Review</span>
             <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
               <PackageCheck className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {loading ? '...' : stats?.pendingDeliveries || 0}
             </p>
-            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 font-medium">
+            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-300 font-medium">
               <span className="text-slate-600">{stats?.completedDeliveries || 0} Accepted Submissions</span>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="mt-3 pt-3 border-t border-amber-500/30 flex items-center justify-between">
             <NavLink to="/admin/deliveries" className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1">
               <span>Review Deliveries</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -182,22 +182,22 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* Platform Volume & Earnings */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+        <div className="bg-emerald-950 p-5 rounded-2xl border border-emerald-500/40 shadow-lg shadow-slate-950/10 flex flex-col justify-between hover:border-emerald-300 transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Platform Volume</span>
+            <span className="text-xs font-bold text-emerald-200 uppercase tracking-wider">Platform Volume</span>
             <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {loading ? '...' : `PKR ${(stats?.totalPlatformVolume || 0).toLocaleString()}`}
             </p>
-            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 font-medium">
+            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-300 font-medium">
               <span className="text-slate-600">PKR {(stats?.pendingVolume || 0).toLocaleString()} in pipeline</span>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="mt-3 pt-3 border-t border-emerald-500/30 flex items-center justify-between">
             <NavLink to="/admin/reports" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
               <span>Financial Reports</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
